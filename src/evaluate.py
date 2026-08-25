@@ -10,6 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.models.models import FraudGAT, FraudCamouflageGNN
 from src.models.layers.sage import GraphSAGEModel
 from src.utils.metrics import compute_metrics
+from torch_geometric.loader import NeighborLoader
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Evaluate Fraud Detection GNN")
@@ -51,10 +52,29 @@ def main():
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
 
+    print("Setting up test data loader...")
+    test_loader = NeighborLoader(
+        data,
+        num_neighbors=[25, 10],
+        batch_size=2048,
+        input_nodes=data.test_mask,
+        shuffle=False,
+        num_workers=0,
+    )
+
     print("Evaluating on test set...")
+    all_preds = []
+    all_labels = []
     with torch.no_grad():
-        out = model(data.x, data.edge_index).squeeze()
-        test_metrics = compute_metrics(out[data.test_mask], data.y[data.test_mask])
+        for batch in test_loader:
+            batch = batch.to(device)
+            out = model(batch.x, batch.edge_index).squeeze(-1)
+            all_preds.append(out[:batch.batch_size])
+            all_labels.append(batch.y[:batch.batch_size])
+            
+    all_preds = torch.cat(all_preds)
+    all_labels = torch.cat(all_labels)
+    test_metrics = compute_metrics(all_preds, all_labels)
 
     print("Test Results:")
     print(f"  PR-AUC:  {test_metrics['pr_auc']:.4f}")

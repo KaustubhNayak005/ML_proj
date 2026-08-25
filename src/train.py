@@ -16,6 +16,7 @@ from src.models.models import FraudGAT, FraudCamouflageGNN
 from src.models.layers.sage import GraphSAGEModel
 from src.utils.metrics import compute_metrics
 from src.utils.seed import set_seed
+from torch_geometric.loader import NeighborLoader
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Train Fraud Detection GNN")
@@ -84,35 +85,76 @@ def main():
     pos_weight = torch.tensor([num_neg / (num_pos + 1e-6)], device=device)
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
+    print("Setting up data loaders...")
+    train_loader = NeighborLoader(
+        data,
+        num_neighbors=[25, 10],
+        batch_size=1024,
+        input_nodes=data.train_mask,
+        shuffle=True,
+        num_workers=0,
+    )
+    
+    val_loader = NeighborLoader(
+        data,
+        num_neighbors=[25, 10],
+        batch_size=2048,
+        input_nodes=data.val_mask,
+        shuffle=False,
+        num_workers=0,
+    )
+
     print("Starting training...")
     best_val_pr_auc = 0.0
     metrics_log = []
 
     for epoch in range(1, config['epochs'] + 1):
         model.train()
-        optimizer.zero_grad()
-        out = model(data.x, data.edge_index).squeeze()
-        loss = criterion(out[data.train_mask], data.y[data.train_mask].float())
-        loss.backward()
-        optimizer.step()
+        total_loss = 0
+        total_batches = 0
+        for batch in train_loader:
+            batch = batch.to(device)
+            optimizer.zero_grad()
+            out = model(batch.x, batch.edge_index).squeeze(-1)
+            loss = criterion(out[:batch.batch_size], batch.y[:batch.batch_size].float())
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+            total_batches += 1
+            
+        avg_train_loss = total_loss / total_batches
 
         # Validation
         model.eval()
+        val_loss = 0
+        val_batches = 0
+        all_preds = []
+        all_labels = []
         with torch.no_grad():
-            out = model(data.x, data.edge_index).squeeze()
-            val_loss = criterion(out[data.val_mask], data.y[data.val_mask].float())
-            val_metrics = compute_metrics(out[data.val_mask], data.y[data.val_mask])
+            for batch in val_loader:
+                batch = batch.to(device)
+                out = model(batch.x, batch.edge_index).squeeze(-1)
+                loss = criterion(out[:batch.batch_size], batch.y[:batch.batch_size].float())
+                val_loss += loss.item()
+                val_batches += 1
+                all_preds.append(out[:batch.batch_size])
+                all_labels.append(batch.y[:batch.batch_size])
+                
+        avg_val_loss = val_loss / max(1, val_batches)
+        all_preds = torch.cat(all_preds)
+        all_labels = torch.cat(all_labels)
+        val_metrics = compute_metrics(all_preds, all_labels)
 
-        log_str = (f"Epoch {epoch:03d} | Train Loss: {loss.item():.4f} | "
-                   f"Val Loss: {val_loss.item():.4f} | "
+        log_str = (f"Epoch {epoch:03d} | Train Loss: {avg_train_loss:.4f} | "
+                   f"Val Loss: {avg_val_loss:.4f} | "
                    f"Val PR-AUC: {val_metrics['pr_auc']:.4f} | "
                    f"Val ROC-AUC: {val_metrics['roc_auc']:.4f}")
         print(log_str)
 
         metrics_log.append({
             'epoch': epoch,
-            'train_loss': loss.item(),
-            'val_loss': val_loss.item(),
+            'train_loss': avg_train_loss,
+            'val_loss': avg_val_loss,
             **val_metrics
         })
 
