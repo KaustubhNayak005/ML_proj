@@ -60,7 +60,7 @@ def main():
     if not os.path.exists(data_path):
         raise FileNotFoundError(f"Graph data not found at {data_path}. Run build_graph.py first.")
     
-    data = torch.load(data_path).to(device)
+    data = torch.load(data_path, weights_only=False).to(device)
     print(f"Loaded graph with {data.num_nodes} nodes and {data.edge_index.size(1)} edges.")
 
     in_channels = data.x.size(1)

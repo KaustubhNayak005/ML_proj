@@ -33,7 +33,9 @@ def main():
 
     # Load data
     data_path = os.path.join('data', 'processed', 'graph.pt')
-    data = torch.load(data_path).to(device)
+    print(f"Loading data from {data_path}...")
+    data = torch.load(data_path, weights_only=False).to(device)
+    print("Data loaded successfully.")
     in_channels = data.x.size(1)
 
     # Instantiate model
