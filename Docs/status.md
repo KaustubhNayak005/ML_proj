@@ -2,13 +2,14 @@
 
 ## Completed Phases
 * **Phase 0 (Environment & Repo Setup):** 
-  * Repository structure initialized.
+  * Repository structure initialized, GitHub repo created, `.gitignore` setup.
   * Environment setup and `requirements.txt` generated.
   * Random seed utility implemented (`src/utils/seed.py`).
   * `README.md` stubbed with project summary and novelty statement.
 * **Phase 1 (Problem framing & dataset decision):**
   * Dataset chosen: IEEE-CIS (documented in `README.md`).
   * Problem and novelty statements defined.
+  * **[Completed]** EDA notebook (`notebooks/eda.ipynb`) created analyzing class imbalance and feature cardinality.
 * **Phase 2 (Graph construction pipeline):**
   * Graph construction logic implemented in `src/data/build_graph.py`.
 * **Phase 3 (GraphSAGE from scratch):**
@@ -17,25 +18,23 @@
 * **Phase 4 (GAT from scratch):**
   * GATConv layer implemented (`src/models/layers/gat.py`).
   * Unit tests written (`tests/test_gat.py`).
-* **Phase 7 (Design & implement the novel module):** *(Partially Completed, executed out of order)*
+* **Phase 5 (Baseline training & evaluation harness):**
+  * **[Completed]** `train.py` and `evaluate.py` created.
+  * **[Completed]** Logging and `configs/` structure established for ablations.
+  * **[Completed]** Class imbalance handling via `pos_weight` in BCE loss.
+* **Phase 6 (Literature deep-dive: camouflage-resistant GNNs):**
+  * **[Completed]** `report/related_work.md` written, including mechanism summaries and our proposed novelty.
+* **Phase 7 (Design & implement the novel module):** 
   * Camouflage GAT module implemented (`src/models/layers/camouflage_gat.py`).
-  * Unit tests written (`tests/test_camouflage.py`).
+  * Unit tests written and passing (`tests/test_camouflage.py`).
 
 ## Missing / Incomplete Tasks
-* **Phase 1 (Problem framing):**
-  * Missing the EDA notebook (`notebooks/` is empty).
-* **Phase 5 (Baseline training & evaluation harness):**
-  * `metrics.py` and `test_train_loop.py` are present, but the main `train.py` and `evaluate.py` harnesses are missing.
-  * Need to run baselines to convergence and save a results table.
-* **Phase 6 (Literature deep-dive: camouflage-resistant GNNs):**
-  * Missing the 3-4 paper mechanism summaries in the `report/` directory.
-  * Missing the paragraph detailing the specific proposed twist for Phase 7.
 * **Phase 8 (Experiments & ablations):**
-  * Main comparison table and ablations are yet to be run (the `experiments/` directory is empty).
-  * Report writing is pending.
+  * Actual model training on the full graph needs to be run.
+  * Run the ablation configurations (`sage_baseline.yaml`, `gat_baseline.yaml`, `camo_gat.yaml`) across 3 random seeds.
+  * The final report synthesizing results, figures, and limitations needs to be written.
 
 ## What is Next
-1. **Complete Phase 1 (EDA):** Create the required EDA notebook analyzing class balance, missing values, and shared entity cardinality for the IEEE-CIS dataset.
-2. **Implement Phase 5 (Training Harness):** Build `train.py` and `evaluate.py` to establish the baseline performance for GraphSAGE and GAT. This is a prerequisite before properly testing the camouflage module.
-3. **Complete Phase 6 (Literature Review):** Perform the literature review and write the required mechanism summaries.
-4. **Integrate Phase 7 & 8:** Integrate the existing `camouflage_gat.py` into the training harness and run the full ablation studies.
+1. **Run Experiments (Phase 8):** Download the full dataset locally (or attach to a Kaggle session) and run the `train.py` script for each config. 
+2. **Compile Results:** Record the mean ± standard deviation for the PR-AUC and ROC-AUC scores across the 3 seeds for each configuration.
+3. **Write the Final Report:** Combine the novelty statement, related work, and experiment results into a final deliverable report.
