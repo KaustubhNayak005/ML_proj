@@ -38,8 +38,9 @@ def main():
         for seed in seeds:
             metrics = run_experiment(config, seed)
             if metrics:
-                results[config_name]['pr_auc'].append(metrics.get("pr_auc", 0))
-                results[config_name]['roc_auc'].append(metrics.get("roc_auc", 0))
+                best_epoch = max(metrics, key=lambda m: m.get("pr_auc", 0))
+                results[config_name]['pr_auc'].append(best_epoch.get("pr_auc", 0))
+                results[config_name]['roc_auc'].append(best_epoch.get("roc_auc", 0))
                 
     # Generate Markdown Table
     os.makedirs("report", exist_ok=True)

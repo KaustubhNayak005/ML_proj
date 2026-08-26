@@ -1,11 +1,43 @@
+# Virtual environments
 .venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
 __pycache__/
+*.py[cod]
+*$py.class
+
+# Pytest
 .pytest_cache/
-*.pyc
-data/raw/
-data/processed/
-experiments/checkpoints/
+
+# Environment variables
+.env
+.env.*
+
+# Data
+data/
+!data/.gitkeep
+
+# Experiments & Logs
+experiments/
+*.log
+
+# Documentation
 docs/private_docs/
 Docs/private_docs/
 
-Docs/private_docs/
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Models
+*.pt
+*.pth
+*.ckpt
+*.h5
+*.pb
+

@@ -75,6 +75,8 @@ class CamouflageGATConv(nn.Module):
         alpha_softmax = alpha_exp / (alpha_sum[dst] + 1e-16)
         
         alpha_softmax = F.dropout(alpha_softmax, p=self.dropout, training=self.training)
+        
+        self._alpha = alpha_softmax
 
         messages = x_proj[src] * alpha_softmax
         

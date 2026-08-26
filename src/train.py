@@ -32,13 +32,16 @@ def parse_args():
     return parser.parse_args()
 
 def load_config(args):
-    config = vars(args)
+    cli_args = {k: v for k, v in vars(args).items() if v is not None}
+    config = vars(args).copy()
     if args.config and os.path.exists(args.config):
         with open(args.config, 'r') as f:
             yaml_config = yaml.safe_load(f)
             config.update(yaml_config)
     
-    if config['run_name'] is None:
+    config.update(cli_args)
+    
+    if config.get('run_name') is None:
         config['run_name'] = f"{config['model']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     return config
 
