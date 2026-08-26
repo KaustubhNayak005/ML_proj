@@ -4,3 +4,7 @@ pandas
 numpy
 scikit-learn
 matplotlib
+pyyaml
+python-dotenv
+langchain-google-genai
+langgraph
