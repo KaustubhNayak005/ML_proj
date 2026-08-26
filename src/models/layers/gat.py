@@ -73,6 +73,7 @@ class GATConv(nn.Module):
         
         alpha_softmax = alpha_exp / (alpha_sum[dst] + 1e-16)
         
+        self._alpha = alpha_softmax
         alpha_softmax = F.dropout(alpha_softmax, p=self.dropout, training=self.training)
 
         # 3. Message passing
