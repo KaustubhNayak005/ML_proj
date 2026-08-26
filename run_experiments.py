@@ -15,8 +15,17 @@ def run_experiment(config_file, seed):
     print(f"\n--- Running: {' '.join(cmd)} ---")
     subprocess.run(cmd, check=True)
     
-    # Read metrics
-    metrics_path = os.path.join("experiments", run_name, "metrics.json")
+    # Evaluate model
+    exp_dir = os.path.join("experiments", run_name)
+    eval_cmd = [
+        "python", "src/evaluate.py",
+        "--exp_dir", exp_dir
+    ]
+    print(f"\n--- Evaluating: {' '.join(eval_cmd)} ---")
+    subprocess.run(eval_cmd, check=True)
+    
+    # Read test metrics
+    metrics_path = os.path.join(exp_dir, "test_results.json")
     if os.path.exists(metrics_path):
         with open(metrics_path, "r") as f:
             return json.load(f)
@@ -38,9 +47,8 @@ def main():
         for seed in seeds:
             metrics = run_experiment(config, seed)
             if metrics:
-                best_epoch = max(metrics, key=lambda m: m.get("pr_auc", 0))
-                results[config_name]['pr_auc'].append(best_epoch.get("pr_auc", 0))
-                results[config_name]['roc_auc'].append(best_epoch.get("roc_auc", 0))
+                results[config_name]['pr_auc'].append(metrics.get("pr_auc", 0))
+                results[config_name]['roc_auc'].append(metrics.get("roc_auc", 0))
                 
     # Generate Markdown Table
     os.makedirs("report", exist_ok=True)
