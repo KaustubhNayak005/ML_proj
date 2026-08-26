@@ -4,9 +4,10 @@ import numpy as np
 import torch
 from torch_geometric.data import Data
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler
+import argparse
 
 # Configuration
-RAW_DATA_DIR = 'data/raw'*
+RAW_DATA_DIR = 'data/raw'
 PROCESSED_DATA_DIR = 'data/processed'
 TRANSACTION_FILE = os.path.join(RAW_DATA_DIR, 'train_transaction.csv')
 IDENTITY_FILE = os.path.join(RAW_DATA_DIR, 'train_identity.csv')
@@ -24,11 +25,15 @@ def check_files():
         return False
     return True
 
-def build_graph():
+def build_graph(limit=None):
     print("Loading data...")
     # Read data (limiting rows for initial testing can be done here if needed)
-    df_trans = pd.read_csv(TRANSACTION_FILE)
-    df_id = pd.read_csv(IDENTITY_FILE)
+    if limit is not None:
+        df_trans = pd.read_csv(TRANSACTION_FILE, nrows=limit)
+        df_id = pd.read_csv(IDENTITY_FILE, nrows=limit)
+    else:
+        df_trans = pd.read_csv(TRANSACTION_FILE)
+        df_id = pd.read_csv(IDENTITY_FILE)
     
     # Merge on TransactionID
     df = df_trans.merge(df_id, on='TransactionID', how='left')
@@ -56,15 +61,19 @@ def build_graph():
     # Impute numeric with 0 (a simplistic approach, could be improved)
     features_df[numeric_cols] = features_df[numeric_cols].fillna(0)
     
+    train_end = int(len(df) * 0.7)
+    
     # Encode categorical
     features_df[categorical_cols] = features_df[categorical_cols].fillna('MISSING')
     encoder = OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1)
     if len(categorical_cols) > 0:
-        features_df[categorical_cols] = encoder.fit_transform(features_df[categorical_cols])
+        encoder.fit(features_df.iloc[:train_end][categorical_cols])
+        features_df[categorical_cols] = encoder.transform(features_df[categorical_cols])
     
     # Scale features
     scaler = StandardScaler()
-    x_scaled = scaler.fit_transform(features_df)
+    scaler.fit(features_df.iloc[:train_end])
+    x_scaled = scaler.transform(features_df)
     x = torch.tensor(x_scaled, dtype=torch.float)
     
     print("Building edges...")
@@ -144,9 +153,13 @@ def build_graph():
     print(data)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--limit', type=int, default=None, help="Limit number of rows to load")
+    args = parser.parse_args()
+
     # Change working directory to project root if executed from elsewhere
     proj_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
     os.chdir(proj_root)
     
     if check_files():
-        build_graph()
+        build_graph(limit=args.limit)
