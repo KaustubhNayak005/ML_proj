@@ -61,7 +61,8 @@ class CamouflageGATConv(nn.Module):
         sim = F.cosine_similarity(x_proj[src], x_proj[dst], dim=-1).unsqueeze(-1) # [num_edges, heads, 1]
         
         # Add similarity score to attention to downweight edges with low similarity
-        alpha = alpha + self.sim_weight * sim
+        sim_weight_positive = F.softplus(self.sim_weight)
+        alpha = alpha + sim_weight_positive * sim
         # -------------------------------------
 
         # Softmax over neighborhood
