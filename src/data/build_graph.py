@@ -7,33 +7,30 @@ from sklearn.preprocessing import OrdinalEncoder, StandardScaler
 import argparse
 
 # Configuration
-RAW_DATA_DIR = 'data/raw'
 PROCESSED_DATA_DIR = 'data/processed'
-TRANSACTION_FILE = os.path.join(RAW_DATA_DIR, 'train_transaction.csv')
-IDENTITY_FILE = os.path.join(RAW_DATA_DIR, 'train_identity.csv')
 OUTPUT_FILE = os.path.join(PROCESSED_DATA_DIR, 'graph.pt')
 
 # Relations to build and degree cap (to prevent hub explosion)
 RELATION_COLS = ['card1', 'card2', 'addr1', 'addr2', 'P_emaildomain', 'DeviceInfo']
 DEGREE_CAP = 100  # If an entity appears more than 100 times, do not build edges between all its transactions
 
-def check_files():
-    if not os.path.exists(TRANSACTION_FILE) or not os.path.exists(IDENTITY_FILE):
+def check_files(transaction_file, identity_file, raw_data_dir):
+    if not os.path.exists(transaction_file) or not os.path.exists(identity_file):
         print("Error: IEEE-CIS dataset files not found.")
         print(f"Please download 'train_transaction.csv' and 'train_identity.csv' from Kaggle (IEEE-CIS Fraud Detection)")
-        print(f"and place them in the '{RAW_DATA_DIR}' directory.")
+        print(f"and place them in the '{raw_data_dir}' directory.")
         return False
     return True
 
-def build_graph(limit=None):
+def build_graph(transaction_file, identity_file, limit=None):
     print("Loading data...")
     # Read data (limiting rows for initial testing can be done here if needed)
     if limit is not None:
-        df_trans = pd.read_csv(TRANSACTION_FILE, nrows=limit)
-        df_id = pd.read_csv(IDENTITY_FILE, nrows=limit)
+        df_trans = pd.read_csv(transaction_file, nrows=limit)
+        df_id = pd.read_csv(identity_file, nrows=limit)
     else:
-        df_trans = pd.read_csv(TRANSACTION_FILE)
-        df_id = pd.read_csv(IDENTITY_FILE)
+        df_trans = pd.read_csv(transaction_file)
+        df_id = pd.read_csv(identity_file)
     
     # Merge on TransactionID
     df = df_trans.merge(df_id, on='TransactionID', how='left')
@@ -155,11 +152,15 @@ def build_graph(limit=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--limit', type=int, default=None, help="Limit number of rows to load")
+    parser.add_argument('--data_dir', type=str, default='data/raw', help="Directory containing Kaggle CSVs")
     args = parser.parse_args()
 
     # Change working directory to project root if executed from elsewhere
     proj_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
     os.chdir(proj_root)
     
-    if check_files():
-        build_graph(limit=args.limit)
+    transaction_file = os.path.join(args.data_dir, 'train_transaction.csv')
+    identity_file = os.path.join(args.data_dir, 'train_identity.csv')
+    
+    if check_files(transaction_file, identity_file, args.data_dir):
+        build_graph(transaction_file, identity_file, limit=args.limit)
