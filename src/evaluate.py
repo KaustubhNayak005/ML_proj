@@ -53,14 +53,23 @@ def main():
     model.eval()
 
     print("Setting up test data loader...")
-    test_loader = NeighborLoader(
-        data,
-        num_neighbors=[25, 10],
-        batch_size=2048,
-        input_nodes=data.test_mask,
-        shuffle=False,
-        num_workers=0,
-    )
+    if os.environ.get('EVAL_PLUMBING_TEST') == '1':
+        print("Warning: EVAL_PLUMBING_TEST=1. Using dummy loader for plumbing tests.")
+        from torch_geometric.data import Data
+        dummy_batch = Data(x=torch.randn(2, in_channels).to(device), 
+                           edge_index=torch.tensor([[0, 1], [1, 0]]).to(device), 
+                           y=torch.tensor([0, 1]).to(device), 
+                           batch_size=2)
+        test_loader = [dummy_batch]
+    else:
+        test_loader = NeighborLoader(
+            data,
+            num_neighbors=[25, 10],
+            batch_size=2048,
+            input_nodes=data.test_mask,
+            shuffle=False,
+            num_workers=0,
+        )
 
     print("Evaluating on test set...")
     all_preds = []
